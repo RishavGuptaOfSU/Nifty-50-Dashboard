@@ -9,7 +9,6 @@ import pandas as pd
 from datetime import datetime, timedelta
 from typing import Dict, List, Any
 import uuid
-import requests
 
 # ========== PATHS ==========
 DATA_DIR = "data"
@@ -427,25 +426,18 @@ def initialize_strategies():
 
 def get_kite_instance():
     """Get KiteConnect instance with credentials from .env"""
-    try:
-        # Fetch access token from URL
-        response = requests.get("http://hft.administrations.in:9969/token.txt", timeout=10)
-        response.raise_for_status()
-        access_token = response.text.strip()
-        
-        api_key = "7l5srg7i4h2lfflb"
-        
-        if not api_key or not access_token:
-            raise ValueError("Missing API key or failed to fetch access token")
-        
-        kite = KiteConnect(api_key=api_key)
-        kite.set_access_token(access_token)
-        return kite
-        
-    except requests.RequestException as e:
-        raise ValueError(f"Failed to fetch access token from URL: {e}")
-    except Exception as e:
-        raise ValueError(f"Error initializing Kite instance: {e}")
+    load_dotenv(ENV_FILE)
+    config = dotenv_values(ENV_FILE)
+    
+    api_key = config.get("KITE_API_KEY")
+    access_token = config.get("KITE_ACCESS_TOKEN")
+    
+    if not api_key or not access_token:
+        raise ValueError("Missing KITE_API_KEY or KITE_ACCESS_TOKEN in .env file")
+    
+    kite = KiteConnect(api_key=api_key)
+    kite.set_access_token(access_token)
+    return kite
 
 def initialize_kite_data():
     """Initialize Kite data (instruments, lot size)"""
