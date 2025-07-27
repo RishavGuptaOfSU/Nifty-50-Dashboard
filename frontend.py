@@ -14,6 +14,7 @@ st_autorefresh(interval=2000, key="refresh")
 # ========== Constants ==========
 DATA_DIR = "data"
 STRATEGIES_CONFIG_FILE = os.path.join(DATA_DIR, "strategies_config.json")
+TOKEN_REFRESH_FILE = os.path.join(DATA_DIR, "token_refresh_trigger.txt")
 
 # ========== Helpers ==========
 def read_jsonl(filepath):
@@ -52,6 +53,12 @@ def set_strategy_status(strategy_id, running: bool):
     """Set running status for a specific strategy"""
     status_file = os.path.join(DATA_DIR, f"status_{strategy_id}.json")
     write_json(status_file, {"running": running})
+
+def trigger_token_refresh():
+    """Trigger token refresh in backend by creating trigger file"""
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(TOKEN_REFRESH_FILE, 'w') as f:
+        f.write(str(datetime.now()))
 
 def clear_strategy_logs(strategy_id):
     """Clear logs for a specific strategy"""
@@ -170,8 +177,10 @@ col1, col2, col3, col4 = st.columns(4)
 
 with col1:
     if st.button(f"🚀 Start {strategy_name}"):
+        # Trigger token refresh before starting strategy
+        trigger_token_refresh()
         set_strategy_status(selected_strategy_id, True)
-        st.success(f"✅ Strategy '{strategy_name}' started!")
+        st.success(f"✅ Strategy '{strategy_name}' started with fresh access token!")
         st.rerun()
 
 with col2:

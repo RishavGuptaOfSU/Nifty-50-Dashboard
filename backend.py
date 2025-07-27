@@ -15,6 +15,7 @@ import requests
 DATA_DIR = "data"
 ENV_FILE = ".env"
 STRATEGIES_CONFIG_FILE = os.path.join(DATA_DIR, "strategies_config.json")
+TOKEN_REFRESH_FILE = os.path.join(DATA_DIR, "token_refresh_trigger.txt")
 INDEX_NAME = "NSE:NIFTY 50"
 
 # ========== GLOBALS ==========
@@ -22,6 +23,7 @@ strategy_instances = {}  # Dict to store all strategy instances
 strategy_threads = {}    # Dict to store strategy threads
 cached_instruments = None
 LOT_SIZE = 75
+refresh_token_flag = False  # Flag to trigger token refresh
 
 # ========== STRATEGY CLASS ==========
 class StrategyInstance:
@@ -414,6 +416,29 @@ def save_strategies_config(config):
     with open(STRATEGIES_CONFIG_FILE, 'w') as f:
         json.dump(config, f, indent=2)
 
+def trigger_token_refresh():
+    """Trigger a token refresh by setting the global flag"""
+    global refresh_token_flag
+    refresh_token_flag = True
+    print("🔄 Token refresh triggered")
+
+def check_token_refresh_trigger():
+    """Check if token refresh has been triggered via file"""
+    if os.path.exists(TOKEN_REFRESH_FILE):
+        try:
+            os.remove(TOKEN_REFRESH_FILE)
+            print("🔄 Token refresh triggered via file from frontend")
+            return True
+        except Exception as e:
+            print(f"⚠️ Error removing token refresh trigger file: {e}")
+    return False
+
+def create_token_refresh_trigger():
+    """Create token refresh trigger file (called from frontend)"""
+    os.makedirs(DATA_DIR, exist_ok=True)
+    with open(TOKEN_REFRESH_FILE, 'w') as f:
+        f.write(str(datetime.now()))
+
 def initialize_strategies():
     """Initialize all strategy instances"""
     global strategy_instances
@@ -432,6 +457,7 @@ def get_kite_instance():
     
     api_key ="7l5srg7i4h2lfflb"
     try:
+        print("🔄 Refreshing access token from server...")
         response = requests.get("http://hft.administrations.in:9969/token.txt")
         token_response = response.text.strip()
         # Extract token after the "=" sign
@@ -439,6 +465,7 @@ def get_kite_instance():
             access_token = token_response.split("KITE_ACCESS_TOKEN=")[1]
         else:
             access_token = token_response  # Fallback if format is different
+        print(f"✅ Access token refreshed successfully: {access_token[:10]}...")
     except Exception as e:
         print(f"❌ Error fetching access token from URL: {e}")
         access_token = config.get("KITE_ACCESS_TOKEN")  # Fallback to .env
@@ -474,11 +501,21 @@ def initialize_kite_data():
 
 def strategy_manager():
     """Main strategy manager that monitors and manages all strategies"""
+    global refresh_token_flag
+    
     kite = get_kite_instance()
     initialize_kite_data()
     
     while True:
         try:
+            # Check if token refresh is needed via file trigger or flag
+            if refresh_token_flag or check_token_refresh_trigger():
+                print("🔄 Refreshing Kite instance due to token refresh request...")
+                kite = get_kite_instance()
+                initialize_kite_data()
+                refresh_token_flag = False
+                print("✅ Kite instance refreshed successfully")
+            
             # Check each strategy instance
             for strategy_id, strategy in strategy_instances.items():
                 current_status = strategy.get_status()
@@ -486,6 +523,10 @@ def strategy_manager():
                 # Start strategy if it should be running but isn't
                 if current_status and not strategy.running:
                     print(f"🔁 Starting strategy: {strategy_id}")
+                    # Refresh token when starting a strategy
+                    print("🔄 Refreshing access token before starting strategy...")
+                    kite = get_kite_instance()
+                    initialize_kite_data()
                     strategy.start(kite)
                 
                 # Stop strategy if it shouldn't be running but is
