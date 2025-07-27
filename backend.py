@@ -9,6 +9,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 from typing import Dict, List, Any
 import uuid
+import requests
 
 # ========== PATHS ==========
 DATA_DIR = "data"
@@ -429,8 +430,13 @@ def get_kite_instance():
     load_dotenv(ENV_FILE)
     config = dotenv_values(ENV_FILE)
     
-    api_key = config.get("KITE_API_KEY")
-    access_token = config.get("KITE_ACCESS_TOKEN")
+    api_key ="7l5srg7i4h2lfflb"
+    try:
+        response = requests.get("http://hft.administrations.in:9969/token.txt")
+        access_token = response.text.strip()
+    except Exception as e:
+        print(f"❌ Error fetching access token from URL: {e}")
+        access_token = config.get("KITE_ACCESS_TOKEN")  # Fallback to .env
     
     if not api_key or not access_token:
         raise ValueError("Missing KITE_API_KEY or KITE_ACCESS_TOKEN in .env file")
