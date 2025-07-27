@@ -433,7 +433,12 @@ def get_kite_instance():
     api_key ="7l5srg7i4h2lfflb"
     try:
         response = requests.get("http://hft.administrations.in:9969/token.txt")
-        access_token = response.text.strip()
+        token_response = response.text.strip()
+        # Extract token after the "=" sign
+        if "KITE_ACCESS_TOKEN=" in token_response:
+            access_token = token_response.split("KITE_ACCESS_TOKEN=")[1]
+        else:
+            access_token = token_response  # Fallback if format is different
     except Exception as e:
         print(f"❌ Error fetching access token from URL: {e}")
         access_token = config.get("KITE_ACCESS_TOKEN")  # Fallback to .env
