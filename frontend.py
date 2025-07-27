@@ -115,7 +115,7 @@ if not strategy_ids:
                 strategies_config[new_strategy_id] = new_config
                 save_strategies_config(strategies_config)
                 st.success(f"✅ Strategy '{new_strategy_name}' created successfully!")
-                st.experimental_rerun()
+                st.rerun()
             else:
                 st.error("❌ Please provide both Strategy Name and Strategy ID")
     
@@ -172,13 +172,13 @@ with col1:
     if st.button(f"🚀 Start {strategy_name}"):
         set_strategy_status(selected_strategy_id, True)
         st.success(f"✅ Strategy '{strategy_name}' started!")
-        st.experimental_rerun()
+        st.rerun()
 
 with col2:
     if st.button(f"🛑 Stop {strategy_name}"):
         set_strategy_status(selected_strategy_id, False)
         st.warning(f"🛑 Strategy '{strategy_name}' stopped!")
-        st.experimental_rerun()
+        st.rerun()
 
 with col3:
     if st.button(f"🧹 Clear Logs"):
@@ -307,7 +307,7 @@ if live_trades:
                         f.write(json.dumps(updated_trade) + "\n")
                     
                     st.success(f"✅ Trade parameters updated for trigger {trade['trigger']}")
-                    st.experimental_rerun()
+                    st.rerun()
             
             st.divider()
 
@@ -449,7 +449,7 @@ with st.expander("🛠️ Strategy Management"):
             strategies_config[new_strategy_id] = new_config
             save_strategies_config(strategies_config)
             st.success(f"✅ Strategy '{new_strategy_name}' created successfully!")
-            st.experimental_rerun()
+            st.rerun()
         else:
             if not new_strategy_id or not new_strategy_name:
                 st.error("❌ Please provide both Strategy Name and Strategy ID")
@@ -475,7 +475,7 @@ with st.expander("🛠️ Strategy Management"):
                     os.remove(file_path)
             
             st.success(f"✅ Strategy deleted successfully!")
-            st.experimental_rerun()
+            st.rerun()
 
 # ========== Footer ==========
 st.markdown("---")
